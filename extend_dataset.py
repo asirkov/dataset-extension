@@ -88,6 +88,25 @@ def get_image_grayscale(image, annotation):
     return new_image, new_annotation
 
 
+def get_image_gaussian_blured(image, annotation):
+    filename = annotation["filename"]
+    size = annotation["size"]
+    file_attributes = annotation["file_attributes"]
+    regions = annotation["regions"] if "regions" in annotation else []
+
+    new_image = cv2.GaussianBlur(image, ksize=(31, 31), sigmaX=0, sigmaY=0)
+
+    filename_gb = filename.replace(".", "_gb.")
+
+    new_annotation = {
+        "filename": filename_gb,
+        "size": size,
+        "regions": regions,
+        "file_attributes": file_attributes,
+    }
+    return new_image, new_annotation
+
+
 def get_image_rotated(image, annotation, angle, filename_suffix):
     filename = annotation["filename"]
     size = annotation["size"]
@@ -194,6 +213,22 @@ def main():
                 raise Exception("Failed to write image, path: {}".format(annotation_gs["filename"]))
 
             new_annotations[annotation_gs_name] = annotation_gs
+
+        annotation_gb_name = annotation_name + "_gb"
+        if annotation_gb_name not in annotations:
+            image_gb, annotation_gb = get_image_gaussian_blured(image.copy(), annotation.copy())
+
+            if VERBOSE:
+                cv2.imshow("Image", core.fill_regions(image_gb.copy(), annotation_gb["regions"]))
+                cv2.waitKey(0)
+
+            image_path = os.path.join(IMAGES_DIR, annotation_gb["filename"])
+            if cv2.imwrite(image_path, image_gb):
+                print("Image saved, path: {}".format(image_path))
+            else:
+                raise Exception("Failed to write image, path: {}".format(annotation_gb["filename"]))
+
+            new_annotations[annotation_gb_name] = annotation_gb
 
         annotation_r15_name = annotation_name + "_r15"
         if annotation_r15_name not in annotations:
